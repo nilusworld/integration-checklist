@@ -347,13 +347,12 @@
 //  → Your project → Project Settings → Your apps → Config
 // ═══════════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyDnQ5Qju0a77kYVllflutiyJUdDe2AaMgw",
-  authDomain: "aws-project-list.firebaseapp.com",
-  projectId: "aws-project-list",
-  storageBucket: "aws-project-list.firebasestorage.app",
-  messagingSenderId: "203921906539",
-  appId: "1:203921906539:web:8dcf233779cdcfd1eeca2e",
-  measurementId: "G-W9SKK801RF"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 // ═══════════════════════════════════════════════════════════
 
@@ -367,15 +366,17 @@ const INTEGRATIONS = {
     { title: "Check All FTP Suppliers", desc: "Send email to each supplier asking them to switch from FTP to SFTP." },
     { title: "Check SFTP Accounts",     desc: "Verify all SFTP accounts are set up and accessible." },
     { title: "Set Up CAItoAWS Config",  desc: "Configure CAItoAWS to copy over transactions — only if customer is not already on sftp3." }
-  ]
+  ],
+  "Sheet PO / ASN": []
 };
 
 // ── State ────────────────────────────────────────────────
 let store = {
   customers: [],
-  checklists: {},   // "CustomerName__IntegName": [bool,...]
-  suppliers: {},    // "CustomerName": [{name,status},...]
-  subcustomers: {}  // "CustomerName": [{name,status},...]
+  checklists: {},    // "CustomerName__IntegName": [bool,...]
+  customSteps: {},   // "CustomerName__IntegName": [{title, checked},...]
+  suppliers: {},     // "CustomerName": [{name,status},...]
+  subcustomers: {}   // "CustomerName": [{name,status},...]
 };
 
 let currentCustomer    = null;
@@ -402,6 +403,7 @@ function initFirebase() {
     const data = snap.exists ? snap.data() : {};
     store.customers    = data.customers    || [];
     store.checklists   = data.checklists   || {};
+    store.customSteps  = data.customSteps  || {};
     store.suppliers    = data.suppliers    || {};
     store.subcustomers = data.subcustomers || {};
     setSyncStatus('saved', '✅ synced');
@@ -437,6 +439,12 @@ function getChecklist(cust, integ) {
 }
 function setChecklist(cust, integ, arr) {
   store.checklists[clKey(cust, integ)] = arr; scheduleSync();
+}
+function getCustomSteps(cust, integ) {
+  return store.customSteps[clKey(cust, integ)] || [];
+}
+function setCustomSteps(cust, integ, arr) {
+  store.customSteps[clKey(cust, integ)] = arr; scheduleSync();
 }
 function getList(type, cust) { return store[type][cust] || []; }
 function setList(type, cust, arr) { store[type][cust] = arr; scheduleSync(); }
@@ -505,6 +513,7 @@ function deleteCustomer(name, e) {
   if (!confirm(`Delete "${name}" and all their data?`)) return;
   store.customers = store.customers.filter(c => c !== name);
   Object.keys(store.checklists).forEach(k => { if (k.startsWith(name + '__')) delete store.checklists[k]; });
+  Object.keys(store.customSteps).forEach(k => { if (k.startsWith(name + '__')) delete store.customSteps[k]; });
   delete store.suppliers[name];
   delete store.subcustomers[name];
   scheduleSync();
@@ -534,9 +543,11 @@ function renderHistory() {
   store.customers.forEach(cust => {
     Object.keys(INTEGRATIONS).forEach(integ => {
       const state   = getChecklist(cust, integ);
-      const done    = state.filter(Boolean).length, total = state.length;
-      const pct     = Math.round(done/total*100);
-      const complete = done === total;
+      const custom  = getCustomSteps(cust, integ);
+      const done    = state.filter(Boolean).length + custom.filter(s => s.checked).length;
+      const total   = state.length + custom.length;
+      const pct     = total > 0 ? Math.round(done/total*100) : 0;
+      const complete = total > 0 && done === total;
       const sups    = getList('suppliers',    cust);
       const scs     = getList('subcustomers', cust);
       const sftp    = sups.filter(s => s.status==='sftp').length;
@@ -604,10 +615,12 @@ function selectIntegration(name) {
 // ── Checklist ─────────────────────────────────────────────
 function renderChecklist() {
   if (!currentCustomer || !currentIntegration) return;
-  const state = getChecklist(currentCustomer, currentIntegration);
-  const steps = INTEGRATIONS[currentIntegration];
-  const done = state.filter(Boolean).length, total = steps.length;
-  const pct  = Math.round(done/total*100);
+  const state   = getChecklist(currentCustomer, currentIntegration);
+  const baseSteps = INTEGRATIONS[currentIntegration];
+  const custom  = getCustomSteps(currentCustomer, currentIntegration);
+  const done    = state.filter(Boolean).length + custom.filter(s => s.checked).length;
+  const total   = baseSteps.length + custom.length;
+  const pct     = total > 0 ? Math.round(done/total*100) : 0;
 
   document.getElementById('progress-section').style.display = 'block';
   document.getElementById('cl-actions').style.display = 'flex';
@@ -618,7 +631,9 @@ function renderChecklist() {
 
   const list = document.getElementById('checklist');
   list.innerHTML = '';
-  steps.forEach((step, i) => {
+
+  // Base steps
+  baseSteps.forEach((step, i) => {
     const item = document.createElement('div');
     item.className = 'check-item' + (state[i] ? ' checked' : '');
     item.innerHTML = `<div class="checkbox"><span class="checkmark">✓</span></div>
@@ -634,15 +649,77 @@ function renderChecklist() {
     };
     list.appendChild(item);
   });
+
+  // Custom steps
+  custom.forEach((step, i) => {
+    const item = document.createElement('div');
+    item.className = 'check-item' + (step.checked ? ' checked' : '');
+    item.style.borderStyle = 'dashed';
+    item.innerHTML = `<div class="checkbox"><span class="checkmark">✓</span></div>
+      <div class="item-content">
+        <div class="item-title">${step.title}</div>
+        <div class="item-desc" style="color:#a78bfa;">custom step</div>
+      </div>
+      <button onclick="deleteCustomStep(${i},event)" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:0.85rem;padding:3px 7px;border-radius:5px;" title="Remove">✕</button>`;
+    item.querySelector('.checkbox').onclick = (e) => {
+      e.stopPropagation();
+      const c = getCustomSteps(currentCustomer, currentIntegration);
+      c[i].checked = !c[i].checked;
+      setCustomSteps(currentCustomer, currentIntegration, c);
+      renderChecklist(); renderHistory();
+    };
+    item.onclick = (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      const c = getCustomSteps(currentCustomer, currentIntegration);
+      c[i].checked = !c[i].checked;
+      setCustomSteps(currentCustomer, currentIntegration, c);
+      renderChecklist(); renderHistory();
+    };
+    list.appendChild(item);
+  });
+
+  // Add step row
+  const addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+  addRow.innerHTML = `
+    <input type="text" id="new-step-input" placeholder="+ Add a step for this customer…"
+      style="flex:1;padding:9px 12px;border:1.5px dashed #d1d5db;border-radius:8px;font-size:0.85rem;background:white;color:#1a1a2e;outline:none;"
+      onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#d1d5db'"
+      onkeydown="if(event.key==='Enter') addCustomStep()">
+    <button class="btn btn-sm" style="background:#ede9fe;color:#7c3aed;font-weight:600;" onclick="addCustomStep()">+ Add</button>`;
+  list.appendChild(addRow);
+}
+
+function addCustomStep() {
+  const input = document.getElementById('new-step-input');
+  if (!input) return;
+  const title = input.value.trim();
+  if (!title) return;
+  const custom = getCustomSteps(currentCustomer, currentIntegration);
+  custom.push({ title, checked: false });
+  setCustomSteps(currentCustomer, currentIntegration, custom);
+  renderChecklist();
+}
+
+function deleteCustomStep(index, e) {
+  e.stopPropagation();
+  const custom = getCustomSteps(currentCustomer, currentIntegration);
+  custom.splice(index, 1);
+  setCustomSteps(currentCustomer, currentIntegration, custom);
+  renderChecklist(); renderHistory();
 }
 
 function resetChecklist() {
   if (!confirm('Reset all steps for this customer?')) return;
   setChecklist(currentCustomer, currentIntegration, new Array(INTEGRATIONS[currentIntegration].length).fill(false));
+  const custom = getCustomSteps(currentCustomer, currentIntegration).map(s => ({...s, checked: false}));
+  setCustomSteps(currentCustomer, currentIntegration, custom);
   renderChecklist(); renderHistory();
 }
 function checkAll() {
   setChecklist(currentCustomer, currentIntegration, new Array(INTEGRATIONS[currentIntegration].length).fill(true));
+  const custom = getCustomSteps(currentCustomer, currentIntegration).map(s => ({...s, checked: true}));
+  setCustomSteps(currentCustomer, currentIntegration, custom);
   renderChecklist(); renderHistory();
 }
 
