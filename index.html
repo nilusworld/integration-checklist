@@ -4,218 +4,149 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Integration Checklist</title>
-
-<!-- PWA: install on iPad / iPhone home screen -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Int. Checklist">
 <meta name="theme-color" content="#4a6cf7">
-
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
 <style>
-  :root { color-scheme: light; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6f8; color: #1a1a2e; min-height: 100vh; padding: 20px; max-width: 680px; margin: 0 auto; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #f5f6f8;
-    color: #1a1a2e;
-    min-height: 100vh;
-    padding: 20px;
-    max-width: 680px;
-    margin: 0 auto;
-  }
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+h1 { font-size: 1.25rem; font-weight: 700; }
+.sync-indicator { font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 99px; transition: all 0.3s; }
+.sync-saving  { background: #fef3c7; color: #b45309; }
+.sync-saved   { background: #dcfce7; color: #15803d; }
+.sync-offline { background: #fee2e2; color: #dc2626; }
+.sync-loading { background: #eff6ff; color: #2563eb; }
 
-  /* ── Header ── */
-  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  h1 { font-size: 1.25rem; font-weight: 700; color: #1a1a2e; }
+/* Setup overlay */
+#setup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.setup-box { background: white; border-radius: 16px; padding: 28px; max-width: 480px; width: calc(100% - 40px); box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.setup-box h2 { font-size: 1.1rem; margin-bottom: 8px; }
+.setup-box p { font-size: 0.83rem; color: #555; line-height: 1.6; margin-bottom: 14px; }
+.setup-box code { display: block; background: #f3f4f6; border-radius: 8px; padding: 12px; font-size: 0.78rem; line-height: 1.7; color: #374151; white-space: pre; overflow-x: auto; margin-bottom: 14px; }
+.setup-box a { color: #4a6cf7; }
 
-  .sync-indicator {
-    font-size: 0.72rem; font-weight: 600; padding: 3px 10px;
-    border-radius: 99px; transition: all 0.3s;
-  }
-  .sync-saving  { background: #fef3c7; color: #b45309; }
-  .sync-saved   { background: #dcfce7; color: #15803d; }
-  .sync-offline { background: #fee2e2; color: #dc2626; }
-  .sync-loading { background: #eff6ff; color: #2563eb; }
+/* Controls */
+.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #999; margin-bottom: 6px; }
+.section-label-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.customer-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+select, input[type="text"] { flex: 1; padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 0.85rem; background: white; color: #1a1a2e; outline: none; transition: border-color 0.15s; }
+select:focus, input[type="text"]:focus { border-color: #4a6cf7; }
+.btn { padding: 9px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.15s; white-space: nowrap; }
+.btn-primary { background: #4a6cf7; color: white; } .btn-primary:hover { background: #3a5ce6; }
+.btn-danger { background: #fee2e2; color: #dc2626; } .btn-danger:hover { background: #fca5a5; }
+.btn-ghost { background: #ede9fe; color: #7c3aed; } .btn-ghost:hover { background: #c4b5fd; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.btn-xs { padding: 3px 8px; font-size: 0.72rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; }
+.new-row { display: none; gap: 8px; margin-bottom: 16px; align-items: center; }
+.new-row.show { display: flex; }
 
-  /* ── Setup overlay (shown when Firebase not configured) ── */
-  #setup-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
-    display: flex; align-items: center; justify-content: center; z-index: 999;
-  }
-  .setup-box {
-    background: white; border-radius: 16px; padding: 28px; max-width: 480px;
-    width: calc(100% - 40px); box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  }
-  .setup-box h2 { font-size: 1.1rem; margin-bottom: 8px; }
-  .setup-box p  { font-size: 0.83rem; color: #555; line-height: 1.6; margin-bottom: 14px; }
-  .setup-box code {
-    display: block; background: #f3f4f6; border-radius: 8px; padding: 12px;
-    font-size: 0.78rem; line-height: 1.7; color: #374151; white-space: pre;
-    overflow-x: auto; margin-bottom: 14px;
-  }
-  .setup-box a { color: #4a6cf7; }
+/* Main tabs */
+.main-tabs { display: flex; gap: 0; margin-bottom: 16px; background: #e5e7eb; border-radius: 10px; padding: 3px; }
+.main-tab { flex: 1; padding: 8px 0; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.83rem; font-weight: 600; color: #888; transition: all 0.15s; text-align: center; }
+.main-tab.active { background: white; color: #1a1a2e; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 
-  /* ── Controls ── */
-  .section-label {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.06em; color: #999; margin-bottom: 6px;
-  }
-  .customer-row { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; }
+/* Integration type tabs */
+.tabs-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; align-items: center; }
+.tab { padding: 7px 15px; border-radius: 20px; border: 2px solid #ddd; background: white; color: #555; cursor: pointer; font-size: 0.82rem; font-weight: 600; transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+.tab:hover { border-color: #4a6cf7; color: #4a6cf7; }
+.tab.active { background: #4a6cf7; border-color: #4a6cf7; color: white; }
+.tab-edit-btn { background: none; border: none; cursor: pointer; font-size: 0.7rem; opacity: 0.6; padding: 1px 3px; }
+.tab-edit-btn:hover { opacity: 1; }
 
-  select, input[type="text"] {
-    flex: 1; padding: 9px 12px; border: 1.5px solid #ddd; border-radius: 8px;
-    font-size: 0.85rem; background: white; color: #1a1a2e;
-    outline: none; transition: border-color 0.15s;
-  }
-  select:focus, input[type="text"]:focus { border-color: #4a6cf7; }
+/* Integration type management panel */
+.integ-manage-panel { display: none; background: white; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+.integ-manage-panel.show { display: block; }
+.integ-manage-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
+.integ-manage-row:last-of-type { border-bottom: none; }
+.integ-manage-name { flex: 1; font-size: 0.88rem; font-weight: 600; }
+.integ-manage-input { flex: 1; padding: 5px 10px; border: 1.5px solid #4a6cf7; border-radius: 6px; font-size: 0.85rem; }
 
-  .btn {
-    padding: 9px 14px; border-radius: 8px; border: none; cursor: pointer;
-    font-size: 0.82rem; font-weight: 600; transition: all 0.15s; white-space: nowrap;
-  }
-  .btn-primary { background: #4a6cf7; color: white; }
-  .btn-primary:hover { background: #3a5ce6; }
-  .btn-danger  { background: #fee2e2; color: #dc2626; }
-  .btn-danger:hover  { background: #fca5a5; }
-  .btn-ghost   { background: #ede9fe; color: #7c3aed; }
-  .btn-ghost:hover   { background: #c4b5fd; }
-  .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+/* Progress */
+.progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 8px; margin-bottom: 5px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg,#4a6cf7,#6dd5ed); border-radius: 99px; transition: width 0.3s ease; }
+.progress-label { font-size: 0.75rem; color: #888; margin-bottom: 16px; display: flex; justify-content: space-between; }
+.progress-label .done-label { font-weight: 700; color: #4a6cf7; }
 
-  .new-row { display: none; gap: 8px; margin-bottom: 16px; align-items: center; }
-  .new-row.show { display: flex; }
+/* Checklist */
+.checklist { display: flex; flex-direction: column; gap: 10px; }
+.check-item { display: flex; align-items: flex-start; gap: 12px; background: white; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 12px 14px; transition: all 0.15s; user-select: none; position: relative; }
+.check-item:hover { border-color: #4a6cf7; box-shadow: 0 2px 8px rgba(74,108,247,0.08); }
+.check-item.checked { border-color: #22c55e; background: #f0fdf4; }
+.check-item.custom-step { border-style: dashed; }
+.checkbox { width: 22px; height: 22px; min-width: 22px; border-radius: 6px; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; margin-top: 1px; transition: all 0.15s; cursor: pointer; }
+.check-item.checked .checkbox { background: #22c55e; border-color: #22c55e; }
+.checkmark { display: none; color: white; font-size: 13px; font-weight: 900; }
+.check-item.checked .checkmark { display: block; }
+.item-content { flex: 1; cursor: pointer; }
+.item-title { font-size: 0.88rem; font-weight: 600; color: #1a1a2e; line-height: 1.4; }
+.check-item.checked .item-title { color: #16a34a; text-decoration: line-through; text-decoration-color: #86efac; }
+.item-desc { font-size: 0.77rem; color: #888; margin-top: 2px; line-height: 1.4; }
+.check-item.checked .item-desc { color: #a0c8a0; }
+.item-actions { display: flex; gap: 3px; align-items: center; opacity: 0; transition: opacity 0.15s; }
+.check-item:hover .item-actions { opacity: 1; }
+.item-act-btn { background: none; border: none; cursor: pointer; font-size: 0.8rem; padding: 3px 5px; border-radius: 5px; color: #aaa; }
+.item-act-btn:hover { background: #f3f4f6; color: #555; }
+.item-act-btn.del:hover { background: #fee2e2; color: #dc2626; }
+.step-edit-input { width: 100%; padding: 4px 8px; border: 1.5px solid #4a6cf7; border-radius: 6px; font-size: 0.88rem; font-weight: 600; color: #1a1a2e; outline: none; }
 
-  /* ── Main tabs ── */
-  .main-tabs {
-    display: flex; gap: 0; margin-bottom: 16px;
-    background: #e5e7eb; border-radius: 10px; padding: 3px;
-  }
-  .main-tab {
-    flex: 1; padding: 8px 0; border: none; background: transparent;
-    border-radius: 8px; cursor: pointer; font-size: 0.83rem; font-weight: 600;
-    color: #888; transition: all 0.15s; text-align: center;
-  }
-  .main-tab.active { background: white; color: #1a1a2e; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.all-done { display: none; text-align: center; background: linear-gradient(135deg,#f0fdf4,#dcfce7); border: 2px solid #22c55e; border-radius: 12px; padding: 16px; margin-top: 14px; font-size: 1rem; font-weight: 700; color: #15803d; }
+.all-done.show { display: block; }
 
-  /* ── Integration type tabs ── */
-  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  .tab {
-    padding: 7px 15px; border-radius: 20px; border: 2px solid #ddd;
-    background: white; color: #555; cursor: pointer; font-size: 0.82rem;
-    font-weight: 600; transition: all 0.15s; white-space: nowrap;
-  }
-  .tab:hover { border-color: #4a6cf7; color: #4a6cf7; }
-  .tab.active { background: #4a6cf7; border-color: #4a6cf7; color: white; }
+/* Supplier / Sub-customer */
+.list-add-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.sub-list { display: flex; flex-direction: column; gap: 8px; }
+.sub-item { display: flex; align-items: center; gap: 10px; background: white; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; transition: border-color 0.15s; }
+.sub-item-name { flex: 1; font-size: 0.88rem; font-weight: 600; color: #1a1a2e; }
+.sub-status { display: flex; gap: 5px; align-items: center; }
+.status-btn { padding: 3px 10px; border-radius: 99px; border: 1.5px solid #e5e7eb; background: white; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.15s; color: #888; white-space: nowrap; }
+.status-btn:hover { border-color: #4a6cf7; color: #4a6cf7; }
+.status-btn.s-email { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
+.status-btn.s-sftp { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+.status-btn.s-notified { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
+.status-btn.s-active { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+.sub-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 3px 7px; border-radius: 5px; }
+.sub-del:hover { background: #fee2e2; color: #dc2626; }
+.mini-progress-row { display: none; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 0.78rem; color: #888; }
+.mini-progress-row.show { display: flex; }
+.mini-bar-outer { flex: 1; background: #e5e7eb; border-radius: 99px; height: 6px; overflow: hidden; }
+.mini-bar-inner { height: 100%; background: #22c55e; border-radius: 99px; transition: width 0.3s; }
 
-  /* ── Progress ── */
-  .progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 8px; margin-bottom: 5px; overflow: hidden; }
-  .progress-bar { height: 100%; background: linear-gradient(90deg,#4a6cf7,#6dd5ed); border-radius: 99px; transition: width 0.3s ease; }
-  .progress-label { font-size: 0.75rem; color: #888; margin-bottom: 16px; display: flex; justify-content: space-between; }
-  .progress-label .done-label { font-weight: 700; color: #4a6cf7; }
-
-  /* ── Checklist ── */
-  .checklist { display: flex; flex-direction: column; gap: 10px; }
-  .check-item {
-    display: flex; align-items: flex-start; gap: 12px; background: white;
-    border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 12px 14px;
-    cursor: pointer; transition: all 0.15s; user-select: none;
-  }
-  .check-item:hover { border-color: #4a6cf7; box-shadow: 0 2px 8px rgba(74,108,247,0.08); }
-  .check-item.checked { border-color: #22c55e; background: #f0fdf4; }
-  .checkbox {
-    width: 22px; height: 22px; min-width: 22px; border-radius: 6px;
-    border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center;
-    margin-top: 1px; transition: all 0.15s;
-  }
-  .check-item.checked .checkbox { background: #22c55e; border-color: #22c55e; }
-  .checkmark { display: none; color: white; font-size: 13px; font-weight: 900; }
-  .check-item.checked .checkmark { display: block; }
-  .item-content { flex: 1; }
-  .item-title { font-size: 0.88rem; font-weight: 600; color: #1a1a2e; line-height: 1.4; }
-  .check-item.checked .item-title { color: #16a34a; text-decoration: line-through; text-decoration-color: #86efac; }
-  .item-desc { font-size: 0.77rem; color: #888; margin-top: 2px; line-height: 1.4; }
-  .check-item.checked .item-desc { color: #a0c8a0; }
-
-  .actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-  .all-done {
-    display: none; text-align: center;
-    background: linear-gradient(135deg,#f0fdf4,#dcfce7);
-    border: 2px solid #22c55e; border-radius: 12px; padding: 16px;
-    margin-top: 14px; font-size: 1rem; font-weight: 700; color: #15803d;
-  }
-  .all-done.show { display: block; }
-
-  /* ── Supplier / Sub-customer shared styles ── */
-  .list-add-row { display: flex; gap: 8px; margin-bottom: 14px; }
-  .sub-list { display: flex; flex-direction: column; gap: 8px; }
-  .sub-item {
-    display: flex; align-items: center; gap: 10px; background: white;
-    border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; transition: border-color 0.15s;
-  }
-  .sub-item-name { flex: 1; font-size: 0.88rem; font-weight: 600; color: #1a1a2e; }
-  .sub-status { display: flex; gap: 5px; align-items: center; }
-  .status-btn {
-    padding: 3px 10px; border-radius: 99px; border: 1.5px solid #e5e7eb;
-    background: white; font-size: 0.72rem; font-weight: 700; cursor: pointer;
-    transition: all 0.15s; color: #888; white-space: nowrap;
-  }
-  .status-btn:hover { border-color: #4a6cf7; color: #4a6cf7; }
-  .status-btn.s-email  { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
-  .status-btn.s-sftp   { background: #dcfce7; border-color: #22c55e; color: #15803d; }
-  .status-btn.s-notified { background: #fef3c7; border-color: #f59e0b; color: #b45309; }
-  .status-btn.s-active   { background: #dcfce7; border-color: #22c55e; color: #15803d; }
-  .sub-del { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.85rem; padding: 3px 7px; border-radius: 5px; }
-  .sub-del:hover { background: #fee2e2; color: #dc2626; }
-
-  .mini-progress-row {
-    display: none; align-items: center; gap: 10px; margin-bottom: 14px;
-    font-size: 0.78rem; color: #888;
-  }
-  .mini-progress-row.show { display: flex; }
-  .mini-bar-outer { flex: 1; background: #e5e7eb; border-radius: 99px; height: 6px; overflow: hidden; }
-  .mini-bar-inner { height: 100%; background: #22c55e; border-radius: 99px; transition: width 0.3s; }
-
-  /* ── History ── */
-  .history-toggle {
-    display: none; align-items: center; gap: 5px; font-size: 0.78rem; color: #888;
-    cursor: pointer; margin-bottom: 14px; background: none; border: none; padding: 0;
-  }
-  .history-toggle.show { display: inline-flex; }
-  .history-toggle:hover { color: #4a6cf7; }
-  .history-panel {
-    display: none; background: white; border: 1.5px solid #e5e7eb;
-    border-radius: 10px; padding: 14px; margin-bottom: 16px; overflow-x: auto;
-  }
-  .history-panel.show { display: block; }
-  .history-title { font-size: 0.78rem; font-weight: 700; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-  th { text-align: left; color: #999; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid #f0f0f0; font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.04em; }
-  td { padding: 7px 8px; border-bottom: 1px solid #f7f7f7; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tbody tr { cursor: pointer; }
-  tbody tr:hover td { background: #f9f9ff; }
-  .hist-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 5px; width: 60px; overflow: hidden; display: inline-block; vertical-align: middle; }
-  .hist-bar { height: 100%; background: #4a6cf7; border-radius: 99px; }
-  .hist-bar.complete { background: #22c55e; }
-  .badge { display: inline-block; padding: 2px 7px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; }
-  .badge-done { background: #dcfce7; color: #15803d; }
-  .badge-wip  { background: #eff6ff; color: #2563eb; }
-  .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.9rem; padding: 2px 6px; border-radius: 4px; }
-  .del-btn:hover { background: #fee2e2; color: #dc2626; }
-
-  .empty { text-align: center; padding: 30px 20px; color: #bbb; font-size: 0.85rem; }
-  .divider { border: none; border-top: 1px solid #e5e7eb; margin: 14px 0; }
+/* History */
+.history-toggle { display: none; align-items: center; gap: 5px; font-size: 0.78rem; color: #888; cursor: pointer; margin-bottom: 14px; background: none; border: none; padding: 0; }
+.history-toggle.show { display: inline-flex; }
+.history-toggle:hover { color: #4a6cf7; }
+.history-panel { display: none; background: white; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 16px; overflow-x: auto; }
+.history-panel.show { display: block; }
+.history-title { font-size: 0.78rem; font-weight: 700; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+th { text-align: left; color: #999; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid #f0f0f0; font-size: 0.73rem; text-transform: uppercase; letter-spacing: 0.04em; }
+td { padding: 7px 8px; border-bottom: 1px solid #f7f7f7; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: #f9f9ff; }
+.hist-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 5px; width: 60px; overflow: hidden; display: inline-block; vertical-align: middle; }
+.hist-bar { height: 100%; background: #4a6cf7; border-radius: 99px; }
+.hist-bar.complete { background: #22c55e; }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 99px; font-size: 0.7rem; font-weight: 700; }
+.badge-done { background: #dcfce7; color: #15803d; }
+.badge-wip { background: #eff6ff; color: #2563eb; }
+.del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.9rem; padding: 2px 6px; border-radius: 4px; }
+.del-btn:hover { background: #fee2e2; color: #dc2626; }
+.empty { text-align: center; padding: 30px 20px; color: #bbb; font-size: 0.85rem; }
+.divider { border: none; border-top: 1px solid #e5e7eb; margin: 14px 0; }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SETUP OVERLAY  — hidden once Firebase config is filled in
-═══════════════════════════════════════════════════════════ -->
+<!-- Setup overlay -->
 <div id="setup-overlay" style="display:none;">
   <div class="setup-box">
     <h2>⚙️ One-time Firebase setup</h2>
@@ -234,9 +165,7 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════
-     MAIN UI
-═══════════════════════════════════════════════════════════ -->
+<!-- Main UI -->
 <div class="header">
   <h1>🔗 Integration Checklist</h1>
   <span class="sync-indicator sync-loading" id="sync-indicator">⏳ connecting…</span>
@@ -259,33 +188,41 @@
 <button class="history-toggle" id="history-toggle" onclick="toggleHistory()">
   📋 <span id="history-label">Show all customers</span>
 </button>
-
 <div class="history-panel" id="history-panel">
   <div class="history-title">All Customers</div>
   <table>
-    <thead><tr>
-      <th>Customer</th><th>Integration</th><th>Checklist</th>
-      <th>Suppliers</th><th>Sub-customers</th><th>Status</th><th></th>
-    </tr></thead>
+    <thead><tr><th>Customer</th><th>Integration</th><th>Checklist</th><th>Suppliers</th><th>Sub-customers</th><th>Status</th><th></th></tr></thead>
     <tbody id="history-body"></tbody>
   </table>
 </div>
 
 <hr class="divider" id="main-divider" style="display:none;">
 
-<!-- Main content (shown when a customer is selected) -->
 <div id="integration-section" style="display:none;">
-
   <div class="main-tabs">
-    <button class="main-tab active" id="mtab-checklist"   onclick="switchTab('checklist')">✅ Checklist</button>
-    <button class="main-tab"        id="mtab-suppliers"   onclick="switchTab('suppliers')">🏭 Suppliers</button>
+    <button class="main-tab active" id="mtab-checklist"    onclick="switchTab('checklist')">✅ Checklist</button>
+    <button class="main-tab"        id="mtab-suppliers"    onclick="switchTab('suppliers')">🏭 Suppliers</button>
     <button class="main-tab"        id="mtab-subcustomers" onclick="switchTab('subcustomers')">👥 Customers</button>
   </div>
 
-  <!-- ── CHECKLIST PANEL ── -->
+  <!-- CHECKLIST PANEL -->
   <div id="panel-checklist">
-    <div class="section-label" style="margin-bottom:8px;">Integration Type</div>
-    <div class="tabs" id="tabs"></div>
+    <div class="section-label-row">
+      <span class="section-label" style="margin-bottom:0;">Integration Type</span>
+      <button class="btn-xs" style="background:#f3f4f6;color:#555;" onclick="toggleManagePanel()">⚙️ Manage Types</button>
+    </div>
+
+    <!-- Integration type management panel -->
+    <div class="integ-manage-panel" id="integ-manage-panel">
+      <div id="integ-manage-list"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0;">
+        <input type="text" id="new-integ-input" placeholder="New integration type name…" onkeydown="if(event.key==='Enter') addIntegrationType()">
+        <button class="btn btn-primary btn-sm" onclick="addIntegrationType()">+ Add</button>
+      </div>
+    </div>
+
+    <!-- Integration type tabs -->
+    <div class="tabs-row" id="tabs" style="margin-bottom:16px;"></div>
 
     <div id="progress-section" style="display:none;">
       <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
@@ -304,11 +241,9 @@
     <div class="all-done" id="all-done">🎉 All steps complete for this customer!</div>
   </div>
 
-  <!-- ── SUPPLIERS PANEL ── -->
+  <!-- SUPPLIERS PANEL -->
   <div id="panel-suppliers" style="display:none;">
-    <div class="section-label" style="margin-bottom:8px;">
-      Suppliers for <span id="sup-cust-label" style="color:#4a6cf7;text-transform:none;font-size:0.85rem;"></span>
-    </div>
+    <div class="section-label" style="margin-bottom:8px;">Suppliers for <span id="sup-cust-label" style="color:#4a6cf7;text-transform:none;font-size:0.85rem;"></span></div>
     <div class="list-add-row">
       <input type="text" id="new-supplier-input" placeholder="Supplier name…" onkeydown="if(event.key==='Enter') addListItem('suppliers')">
       <button class="btn btn-primary btn-sm" onclick="addListItem('suppliers')">+ Add</button>
@@ -321,11 +256,9 @@
     <div class="sub-list" id="supplier-list"><div class="empty">No suppliers yet.</div></div>
   </div>
 
-  <!-- ── SUB-CUSTOMERS PANEL ── -->
+  <!-- SUB-CUSTOMERS PANEL -->
   <div id="panel-subcustomers" style="display:none;">
-    <div class="section-label" style="margin-bottom:8px;">
-      Sub-customers of <span id="sc-cust-label" style="color:#4a6cf7;text-transform:none;font-size:0.85rem;"></span>
-    </div>
+    <div class="section-label" style="margin-bottom:8px;">Sub-customers of <span id="sc-cust-label" style="color:#4a6cf7;text-transform:none;font-size:0.85rem;"></span></div>
     <div class="list-add-row">
       <input type="text" id="new-subcustomer-input" placeholder="Sub-customer name…" onkeydown="if(event.key==='Enter') addListItem('subcustomers')">
       <button class="btn btn-primary btn-sm" onclick="addListItem('subcustomers')">+ Add</button>
@@ -337,56 +270,54 @@
     </div>
     <div class="sub-list" id="subcustomer-list"><div class="empty">No sub-customers yet.</div></div>
   </div>
-
-</div><!-- /integration-section -->
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════
 //  FILL IN YOUR FIREBASE CONFIG HERE
-//  Get it from: console.firebase.google.com
-//  → Your project → Project Settings → Your apps → Config
 // ═══════════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyDnQ5Qju0a77kYVllflutiyJUdDe2AaMgw",
-  authDomain: "aws-project-list.firebaseapp.com",
-  projectId: "aws-project-list",
-  storageBucket: "aws-project-list.firebasestorage.app",
-  messagingSenderId: "203921906539",
-  appId: "1:203921906539:web:8dcf233779cdcfd1eeca2e",
-  measurementId: "G-W9SKK801RF"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 // ═══════════════════════════════════════════════════════════
 
-// ── Integration definitions ──────────────────────────────
-const INTEGRATIONS = {
-  "Mill X12 + Mill PO": [
-    { title: "Restore Database",        desc: "Restore the customer database before making any changes." },
-    { title: "Check Organization",      desc: "Verify the organization settings and configuration are correct." },
-    { title: "Purge Database",          desc: "Full purge OR one-year purge — depends on whether customer has Sheet PO Integration as well." },
-    { title: "Check for ASN from Vantree", desc: "If they receive ASN from Vantree: check XCH DB for transactions and set up SQL_Poller." },
-    { title: "Check All FTP Suppliers", desc: "Send email to each supplier asking them to switch from FTP to SFTP." },
-    { title: "Check SFTP Accounts",     desc: "Verify all SFTP accounts are set up and accessible." },
-    { title: "Set Up CAItoAWS Config",  desc: "Configure CAItoAWS to copy over transactions — only if customer is not already on sftp3." }
-  ],
-  "Sheet PO / ASN": []
+// ── Default integration types (loaded on first run) ───────
+function uid() { return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
+
+const DEFAULT_TYPES = {
+  [uid()]: { name: "Mill X12 + Mill PO", steps: [
+    { id: uid(), title: "Restore Database",           desc: "Restore the customer database before making any changes." },
+    { id: uid(), title: "Check Organization",         desc: "Verify the organization settings and configuration are correct." },
+    { id: uid(), title: "Purge Database",             desc: "Full purge OR one-year purge — depends on whether customer has Sheet PO Integration as well." },
+    { id: uid(), title: "Check for ASN from Vantree", desc: "If they receive ASN from Vantree: check XCH DB for transactions and set up SQL_Poller." },
+    { id: uid(), title: "Check All FTP Suppliers",    desc: "Send email to each supplier asking them to switch from FTP to SFTP." },
+    { id: uid(), title: "Check SFTP Accounts",        desc: "Verify all SFTP accounts are set up and accessible." },
+    { id: uid(), title: "Set Up CAItoAWS Config",     desc: "Configure CAItoAWS to copy over transactions — only if customer is not already on sftp3." }
+  ]},
+  [uid()]: { name: "Sheet PO / ASN", steps: [] }
 };
 
-// ── State ────────────────────────────────────────────────
-let store = {
-  customers: [],
-  checklists: {},    // "CustomerName__IntegName": [bool,...]
-  customSteps: {},   // "CustomerName__IntegName": [{title, checked},...]
-  suppliers: {},     // "CustomerName": [{name,status},...]
-  subcustomers: {}   // "CustomerName": [{name,status},...]
-};
+// ── Store ─────────────────────────────────────────────────
+// integrationTypes: { typeId: { name, steps: [{id, title, desc}] } }
+// checklists:       { "cust__typeId": { stepId: bool } }
+// customSteps:      { "cust__typeId": [{id, title, checked}] }
+// suppliers:        { cust: [{name, status}] }
+// subcustomers:     { cust: [{name, status}] }
+let store = { customers:[], integrationTypes:{}, checklists:{}, customSteps:{}, suppliers:{}, subcustomers:{} };
 
 let currentCustomer    = null;
-let currentIntegration = null;
+let currentTypeId      = null;
 let currentMainTab     = 'checklist';
 let saveTimer          = null;
+let managePanelOpen    = false;
 let db, DOC;
 
-// ── Firebase init ────────────────────────────────────────
+// ── Firebase ──────────────────────────────────────────────
 const CONFIG_EMPTY = firebaseConfig.apiKey === "YOUR_API_KEY";
 
 function initFirebase() {
@@ -399,20 +330,22 @@ function initFirebase() {
   db  = firebase.firestore();
   DOC = db.collection('workspaces').doc('main');
   setSyncStatus('loading', '⏳ connecting…');
-
   DOC.onSnapshot(snap => {
     const data = snap.exists ? snap.data() : {};
-    store.customers    = data.customers    || [];
-    store.checklists   = data.checklists   || {};
-    store.customSteps  = data.customSteps  || {};
-    store.suppliers    = data.suppliers    || {};
-    store.subcustomers = data.subcustomers || {};
+    store.customers        = data.customers        || [];
+    store.integrationTypes = data.integrationTypes || {};
+    store.checklists       = data.checklists       || {};
+    store.customSteps      = data.customSteps      || {};
+    store.suppliers        = data.suppliers        || {};
+    store.subcustomers     = data.subcustomers     || {};
+    // First run: seed defaults
+    if (!Object.keys(store.integrationTypes).length) {
+      store.integrationTypes = DEFAULT_TYPES;
+      scheduleSync();
+    }
     setSyncStatus('saved', '✅ synced');
     renderAll();
-  }, err => {
-    console.error(err);
-    setSyncStatus('offline', '❌ offline');
-  });
+  }, err => { console.error(err); setSyncStatus('offline', '❌ offline'); });
 }
 
 function scheduleSync() {
@@ -432,25 +365,28 @@ function setSyncStatus(type, text) {
   el.textContent = text;
 }
 
-// ── Helpers ──────────────────────────────────────────────
-function clKey(cust, integ) { return cust + '__' + integ.replace(/\s+/g,'_'); }
+// ── Helpers ───────────────────────────────────────────────
+function ckKey(cust, typeId) { return cust + '__' + typeId; }
+function getTypeIds() { return Object.keys(store.integrationTypes); }
+function getType(id) { return store.integrationTypes[id]; }
 
-function getChecklist(cust, integ) {
-  return store.checklists[clKey(cust, integ)] || new Array(INTEGRATIONS[integ].length).fill(false);
+function getChecklist(cust, typeId) {
+  const t = getType(typeId);
+  const existing = store.checklists[ckKey(cust,typeId)] || {};
+  // ensure all steps have an entry
+  const result = {};
+  (t ? t.steps : []).forEach(s => { result[s.id] = existing[s.id] || false; });
+  return result;
 }
-function setChecklist(cust, integ, arr) {
-  store.checklists[clKey(cust, integ)] = arr; scheduleSync();
-}
-function getCustomSteps(cust, integ) {
-  return store.customSteps[clKey(cust, integ)] || [];
-}
-function setCustomSteps(cust, integ, arr) {
-  store.customSteps[clKey(cust, integ)] = arr; scheduleSync();
-}
+function setChecklist(cust, typeId, obj) { store.checklists[ckKey(cust,typeId)] = obj; scheduleSync(); }
+
+function getCustomSteps(cust, typeId) { return store.customSteps[ckKey(cust,typeId)] || []; }
+function setCustomSteps(cust, typeId, arr) { store.customSteps[ckKey(cust,typeId)] = arr; scheduleSync(); }
+
 function getList(type, cust) { return store[type][cust] || []; }
 function setList(type, cust, arr) { store[type][cust] = arr; scheduleSync(); }
 
-// ── Render all ───────────────────────────────────────────
+// ── Render all ────────────────────────────────────────────
 function renderAll() {
   renderCustomerSelect();
   renderHistory();
@@ -458,14 +394,13 @@ function renderAll() {
     renderTabs();
     renderCurrentPanel();
   } else if (currentCustomer) {
-    // Customer was deleted elsewhere
     currentCustomer = null;
     document.getElementById('integration-section').style.display = 'none';
     document.getElementById('main-divider').style.display = 'none';
   }
 }
 
-// ── Customer ─────────────────────────────────────────────
+// ── Customer ──────────────────────────────────────────────
 function renderCustomerSelect() {
   const sel = document.getElementById('customer-select');
   sel.innerHTML = '<option value="">— Select a customer —</option>';
@@ -475,8 +410,7 @@ function renderCustomerSelect() {
     if (c === currentCustomer) o.selected = true;
     sel.appendChild(o);
   });
-  const hasCust = store.customers.length > 0;
-  document.getElementById('history-toggle').classList.toggle('show', hasCust);
+  document.getElementById('history-toggle').classList.toggle('show', store.customers.length > 0);
 }
 
 function onCustomerSelect() {
@@ -488,21 +422,14 @@ function onCustomerSelect() {
   if (show) { renderTabs(); renderCurrentPanel(); renderHistory(); }
 }
 
-function showNew(type) {
-  document.getElementById('new-' + type + '-row').classList.add('show');
-  document.getElementById('new-' + type + '-input').focus();
-}
-function hideNew(type) {
-  document.getElementById('new-' + type + '-row').classList.remove('show');
-  document.getElementById('new-' + type + '-input').value = '';
-}
+function showNew(type) { document.getElementById('new-'+type+'-row').classList.add('show'); document.getElementById('new-'+type+'-input').focus(); }
+function hideNew(type) { document.getElementById('new-'+type+'-row').classList.remove('show'); document.getElementById('new-'+type+'-input').value=''; }
 
 function addCustomer() {
   const input = document.getElementById('new-customer-input');
   const name = input.value.trim();
   if (!name || store.customers.includes(name)) { input.value=''; return; }
-  store.customers.push(name);
-  scheduleSync();
+  store.customers.push(name); scheduleSync();
   hideNew('customer');
   renderCustomerSelect();
   document.getElementById('customer-select').value = name;
@@ -513,10 +440,9 @@ function deleteCustomer(name, e) {
   e.stopPropagation();
   if (!confirm(`Delete "${name}" and all their data?`)) return;
   store.customers = store.customers.filter(c => c !== name);
-  Object.keys(store.checklists).forEach(k => { if (k.startsWith(name + '__')) delete store.checklists[k]; });
-  Object.keys(store.customSteps).forEach(k => { if (k.startsWith(name + '__')) delete store.customSteps[k]; });
-  delete store.suppliers[name];
-  delete store.subcustomers[name];
+  Object.keys(store.checklists).forEach(k  => { if (k.startsWith(name+'__')) delete store.checklists[k]; });
+  Object.keys(store.customSteps).forEach(k => { if (k.startsWith(name+'__')) delete store.customSteps[k]; });
+  delete store.suppliers[name]; delete store.subcustomers[name];
   scheduleSync();
   if (currentCustomer === name) {
     currentCustomer = null;
@@ -527,10 +453,10 @@ function deleteCustomer(name, e) {
   renderCustomerSelect(); renderHistory();
 }
 
-// ── History ──────────────────────────────────────────────
+// ── History ───────────────────────────────────────────────
 function toggleHistory() {
   const panel = document.getElementById('history-panel');
-  const open  = panel.classList.toggle('show');
+  const open = panel.classList.toggle('show');
   document.getElementById('history-label').textContent = open ? 'Hide all customers' : 'Show all customers';
 }
 
@@ -542,37 +468,327 @@ function renderHistory() {
     return;
   }
   store.customers.forEach(cust => {
-    Object.keys(INTEGRATIONS).forEach(integ => {
-      const state   = getChecklist(cust, integ);
-      const custom  = getCustomSteps(cust, integ);
-      const done    = state.filter(Boolean).length + custom.filter(s => s.checked).length;
-      const total   = state.length + custom.length;
-      const pct     = total > 0 ? Math.round(done/total*100) : 0;
+    getTypeIds().forEach(typeId => {
+      const t = getType(typeId);
+      const cl = getChecklist(cust, typeId);
+      const cs = getCustomSteps(cust, typeId);
+      const done  = Object.values(cl).filter(Boolean).length + cs.filter(s=>s.checked).length;
+      const total = (t ? t.steps.length : 0) + cs.length;
+      const pct   = total > 0 ? Math.round(done/total*100) : 0;
       const complete = total > 0 && done === total;
-      const sups    = getList('suppliers',    cust);
-      const scs     = getList('subcustomers', cust);
-      const sftp    = sups.filter(s => s.status==='sftp').length;
-      const scAct   = scs.filter(s  => s.status==='active').length;
+      const sups  = getList('suppliers', cust);
+      const scs   = getList('subcustomers', cust);
+      const sftp  = sups.filter(s=>s.status==='sftp').length;
+      const scAct = scs.filter(s=>s.status==='active').length;
       const tr = document.createElement('tr');
       tr.onclick = () => {
         document.getElementById('customer-select').value = cust;
-        onCustomerSelect(); selectIntegration(integ);
+        onCustomerSelect(); selectType(typeId);
         document.getElementById('history-panel').classList.remove('show');
         document.getElementById('history-label').textContent = 'Show all customers';
       };
       tr.innerHTML = `
         <td><strong>${cust}</strong></td>
-        <td style="color:#666;font-size:0.78rem;">${integ}</td>
+        <td style="color:#666;font-size:0.78rem;">${t ? t.name : '—'}</td>
         <td><div style="display:flex;align-items:center;gap:6px;">
           <div class="hist-bar-wrap"><div class="hist-bar${complete?' complete':''}" style="width:${pct}%"></div></div>
           <span style="font-size:0.72rem;color:#999;">${done}/${total}</span></div></td>
         <td style="font-size:0.78rem;color:#666;">${sups.length ? sftp+'/'+sups.length+' SFTP' : '—'}</td>
         <td style="font-size:0.78rem;color:#666;">${scs.length  ? scAct+'/'+scs.length+' active' : '—'}</td>
         <td><span class="badge ${complete?'badge-done':'badge-wip'}">${complete?'Done':'In progress'}</span></td>
-        <td><button class="del-btn" onclick="deleteCustomer('${cust}',event)" title="Delete">✕</button></td>`;
+        <td><button class="del-btn" onclick="deleteCustomer('${cust}',event)">✕</button></td>`;
       tbody.appendChild(tr);
     });
   });
+}
+
+// ── Integration type management ───────────────────────────
+function toggleManagePanel() {
+  managePanelOpen = !managePanelOpen;
+  document.getElementById('integ-manage-panel').classList.toggle('show', managePanelOpen);
+  if (managePanelOpen) renderManagePanel();
+}
+
+function renderManagePanel() {
+  const container = document.getElementById('integ-manage-list');
+  container.innerHTML = '';
+  getTypeIds().forEach(typeId => {
+    const t = getType(typeId);
+    const row = document.createElement('div');
+    row.className = 'integ-manage-row';
+    row.id = 'imr-' + typeId;
+    row.innerHTML = `
+      <span class="integ-manage-name">${t.name}</span>
+      <button class="btn-xs" style="background:#ede9fe;color:#7c3aed;" onclick="startRenameType('${typeId}')">✏️ Rename</button>
+      <button class="btn-xs" style="background:#fee2e2;color:#dc2626;" onclick="deleteIntegrationType('${typeId}')">✕ Delete</button>`;
+    container.appendChild(row);
+  });
+}
+
+function startRenameType(typeId) {
+  const row = document.getElementById('imr-' + typeId);
+  const t = getType(typeId);
+  row.innerHTML = `
+    <input class="integ-manage-input" id="rename-input-${typeId}" value="${t.name}" onkeydown="if(event.key==='Enter') saveRenameType('${typeId}')">
+    <button class="btn-xs" style="background:#4a6cf7;color:white;" onclick="saveRenameType('${typeId}')">Save</button>
+    <button class="btn-xs" style="background:#f3f4f6;color:#888;" onclick="renderManagePanel()">Cancel</button>`;
+  document.getElementById('rename-input-' + typeId).focus();
+}
+
+function saveRenameType(typeId) {
+  const input = document.getElementById('rename-input-' + typeId);
+  const newName = input.value.trim();
+  if (!newName) return;
+  store.integrationTypes[typeId].name = newName;
+  scheduleSync();
+  renderManagePanel();
+  renderTabs();
+}
+
+function addIntegrationType() {
+  const input = document.getElementById('new-integ-input');
+  const name = input.value.trim();
+  if (!name) return;
+  const id = uid();
+  store.integrationTypes[id] = { name, steps: [] };
+  scheduleSync();
+  input.value = '';
+  renderManagePanel();
+  renderTabs();
+}
+
+function deleteIntegrationType(typeId) {
+  const t = getType(typeId);
+  if (!confirm(`Delete integration type "${t.name}"? This will remove it from all customers.`)) return;
+  delete store.integrationTypes[typeId];
+  // clean up checklist data
+  Object.keys(store.checklists).forEach(k  => { if (k.endsWith('__'+typeId)) delete store.checklists[k]; });
+  Object.keys(store.customSteps).forEach(k => { if (k.endsWith('__'+typeId)) delete store.customSteps[k]; });
+  scheduleSync();
+  if (currentTypeId === typeId) currentTypeId = null;
+  renderManagePanel();
+  renderTabs();
+  if (currentTypeId) renderChecklist(); else document.getElementById('checklist').innerHTML = '<div class="empty">👆 Select an integration type.</div>';
+}
+
+// ── Integration type tabs ─────────────────────────────────
+function renderTabs() {
+  const el = document.getElementById('tabs');
+  el.innerHTML = '';
+  const ids = getTypeIds();
+  if (!ids.length) {
+    el.innerHTML = '<span style="color:#bbb;font-size:0.83rem;">No integration types yet — click ⚙️ Manage Types to add one.</span>';
+    return;
+  }
+  ids.forEach(typeId => {
+    const t = getType(typeId);
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (typeId === currentTypeId ? ' active' : '');
+    btn.textContent = t.name;
+    btn.onclick = () => selectType(typeId);
+    el.appendChild(btn);
+  });
+  if (!currentTypeId || !store.integrationTypes[currentTypeId]) selectType(ids[0]);
+}
+
+function selectType(typeId) {
+  currentTypeId = typeId;
+  document.querySelectorAll('.tab').forEach((btn, i) => {
+    btn.classList.toggle('active', getTypeIds()[i] === typeId);
+  });
+  renderChecklist();
+}
+
+// ── Checklist ─────────────────────────────────────────────
+function renderChecklist() {
+  if (!currentCustomer || !currentTypeId) return;
+  const t = getType(currentTypeId);
+  if (!t) return;
+  const cl     = getChecklist(currentCustomer, currentTypeId);
+  const custom = getCustomSteps(currentCustomer, currentTypeId);
+  const baseDone   = t.steps.filter(s => cl[s.id]).length;
+  const customDone = custom.filter(s => s.checked).length;
+  const done  = baseDone + customDone;
+  const total = t.steps.length + custom.length;
+  const pct   = total > 0 ? Math.round(done/total*100) : 0;
+
+  document.getElementById('progress-section').style.display = 'block';
+  document.getElementById('cl-actions').style.display = 'flex';
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${done} of ${total} done`;
+  document.getElementById('progress-pct').textContent  = pct + '%';
+  document.getElementById('all-done').classList.toggle('show', done === total && total > 0);
+
+  const list = document.getElementById('checklist');
+  list.innerHTML = '';
+
+  // Base steps
+  t.steps.forEach((step) => {
+    const checked = !!cl[step.id];
+    const item = document.createElement('div');
+    item.className = 'check-item' + (checked ? ' checked' : '');
+    item.innerHTML = `
+      <div class="checkbox" onclick="toggleBaseStep('${step.id}')"><span class="checkmark">✓</span></div>
+      <div class="item-content" onclick="toggleBaseStep('${step.id}')">
+        <div class="item-title" id="title-${step.id}">${step.title}</div>
+        ${step.desc ? `<div class="item-desc">${step.desc}</div>` : ''}
+      </div>
+      <div class="item-actions">
+        <button class="item-act-btn" onclick="editStep('${step.id}')" title="Edit">✏️</button>
+        <button class="item-act-btn del" onclick="deleteStep('${step.id}')" title="Delete">✕</button>
+      </div>`;
+    list.appendChild(item);
+  });
+
+  // Custom steps (per customer)
+  custom.forEach((step, i) => {
+    const item = document.createElement('div');
+    item.className = 'check-item custom-step' + (step.checked ? ' checked' : '');
+    item.innerHTML = `
+      <div class="checkbox" onclick="toggleCustomStep(${i})"><span class="checkmark">✓</span></div>
+      <div class="item-content" onclick="toggleCustomStep(${i})">
+        <div class="item-title" id="ctitle-${i}">${step.title}</div>
+        <div class="item-desc" style="color:#a78bfa;">custom step</div>
+      </div>
+      <div class="item-actions">
+        <button class="item-act-btn" onclick="editCustomStep(${i})" title="Edit">✏️</button>
+        <button class="item-act-btn del" onclick="deleteCustomStep(${i})" title="Delete">✕</button>
+      </div>`;
+    list.appendChild(item);
+  });
+
+  // Add step row
+  const addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+  addRow.innerHTML = `
+    <input type="text" id="new-step-input" placeholder="+ Add a step for this customer…"
+      style="flex:1;padding:9px 12px;border:1.5px dashed #d1d5db;border-radius:8px;font-size:0.85rem;background:white;color:#1a1a2e;outline:none;"
+      onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#d1d5db'"
+      onkeydown="if(event.key==='Enter') addCustomStep()">
+    <button class="btn btn-sm" style="background:#ede9fe;color:#7c3aed;font-weight:600;" onclick="addCustomStep()">+ Add</button>`;
+  list.appendChild(addRow);
+
+  // Add base step (to the integration type itself)
+  const addBaseRow = document.createElement('div');
+  addBaseRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+  addBaseRow.innerHTML = `
+    <input type="text" id="new-base-step-input" placeholder="+ Add step to this integration type (all customers)…"
+      style="flex:1;padding:9px 12px;border:1.5px dashed #bfdbfe;border-radius:8px;font-size:0.85rem;background:white;color:#1a1a2e;outline:none;"
+      onfocus="this.style.borderColor='#4a6cf7'" onblur="this.style.borderColor='#bfdbfe'"
+      onkeydown="if(event.key==='Enter') addBaseStep()">
+    <button class="btn btn-sm" style="background:#eff6ff;color:#2563eb;font-weight:600;" onclick="addBaseStep()">+ Add to type</button>`;
+  list.appendChild(addBaseRow);
+}
+
+// ── Base step actions ──────────────────────────────────────
+function toggleBaseStep(stepId) {
+  const cl = getChecklist(currentCustomer, currentTypeId);
+  cl[stepId] = !cl[stepId];
+  setChecklist(currentCustomer, currentTypeId, cl);
+  renderChecklist(); renderHistory();
+}
+
+function editStep(stepId) {
+  const titleEl = document.getElementById('title-' + stepId);
+  const oldTitle = titleEl.textContent;
+  const input = document.createElement('input');
+  input.className = 'step-edit-input';
+  input.value = oldTitle;
+  titleEl.replaceWith(input);
+  input.focus();
+  const save = () => {
+    const newTitle = input.value.trim() || oldTitle;
+    const t = getType(currentTypeId);
+    const step = t.steps.find(s => s.id === stepId);
+    if (step) { step.title = newTitle; scheduleSync(); }
+    renderChecklist();
+  };
+  input.onblur = save;
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') renderChecklist(); };
+}
+
+function deleteStep(stepId) {
+  if (!confirm('Delete this step from the integration type? It will be removed for all customers.')) return;
+  const t = getType(currentTypeId);
+  t.steps = t.steps.filter(s => s.id !== stepId);
+  // clean up checklist state for this step across all customers
+  Object.keys(store.checklists).forEach(k => { if (k.endsWith('__'+currentTypeId)) delete store.checklists[k][stepId]; });
+  scheduleSync();
+  renderChecklist(); renderHistory();
+}
+
+function addBaseStep() {
+  const input = document.getElementById('new-base-step-input');
+  const title = input.value.trim();
+  if (!title) return;
+  const t = getType(currentTypeId);
+  t.steps.push({ id: uid(), title, desc: '' });
+  scheduleSync();
+  renderChecklist();
+}
+
+// ── Custom step actions ────────────────────────────────────
+function toggleCustomStep(i) {
+  const custom = getCustomSteps(currentCustomer, currentTypeId);
+  custom[i].checked = !custom[i].checked;
+  setCustomSteps(currentCustomer, currentTypeId, custom);
+  renderChecklist(); renderHistory();
+}
+
+function editCustomStep(i) {
+  const titleEl = document.getElementById('ctitle-' + i);
+  const oldTitle = titleEl.textContent;
+  const input = document.createElement('input');
+  input.className = 'step-edit-input';
+  input.value = oldTitle;
+  titleEl.replaceWith(input);
+  input.focus();
+  const save = () => {
+    const newTitle = input.value.trim() || oldTitle;
+    const custom = getCustomSteps(currentCustomer, currentTypeId);
+    if (custom[i]) { custom[i].title = newTitle; setCustomSteps(currentCustomer, currentTypeId, custom); }
+    renderChecklist();
+  };
+  input.onblur = save;
+  input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') renderChecklist(); };
+}
+
+function deleteCustomStep(i) {
+  const custom = getCustomSteps(currentCustomer, currentTypeId);
+  custom.splice(i, 1);
+  setCustomSteps(currentCustomer, currentTypeId, custom);
+  renderChecklist(); renderHistory();
+}
+
+function addCustomStep() {
+  const input = document.getElementById('new-step-input');
+  const title = (input && input.value.trim());
+  if (!title) return;
+  const custom = getCustomSteps(currentCustomer, currentTypeId);
+  custom.push({ id: uid(), title, checked: false });
+  setCustomSteps(currentCustomer, currentTypeId, custom);
+  renderChecklist();
+}
+
+function resetChecklist() {
+  if (!confirm('Reset all steps for this customer?')) return;
+  const t = getType(currentTypeId);
+  const cl = {};
+  t.steps.forEach(s => { cl[s.id] = false; });
+  setChecklist(currentCustomer, currentTypeId, cl);
+  const custom = getCustomSteps(currentCustomer, currentTypeId).map(s => ({...s, checked: false}));
+  setCustomSteps(currentCustomer, currentTypeId, custom);
+  renderChecklist(); renderHistory();
+}
+
+function checkAll() {
+  const t = getType(currentTypeId);
+  const cl = {};
+  t.steps.forEach(s => { cl[s.id] = true; });
+  setChecklist(currentCustomer, currentTypeId, cl);
+  const custom = getCustomSteps(currentCustomer, currentTypeId).map(s => ({...s, checked: true}));
+  setCustomSteps(currentCustomer, currentTypeId, custom);
+  renderChecklist(); renderHistory();
 }
 
 // ── Main tab switcher ─────────────────────────────────────
@@ -591,180 +807,27 @@ function renderCurrentPanel() {
   if (currentMainTab === 'subcustomers') renderSubList('subcustomers');
 }
 
-// ── Integration tabs ──────────────────────────────────────
-function renderTabs() {
-  const el = document.getElementById('tabs');
-  el.innerHTML = '';
-  Object.keys(INTEGRATIONS).forEach(name => {
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (name===currentIntegration ? ' active' : '');
-    btn.textContent = name;
-    btn.onclick = () => selectIntegration(name);
-    el.appendChild(btn);
-  });
-  if (!currentIntegration || !INTEGRATIONS[currentIntegration])
-    selectIntegration(Object.keys(INTEGRATIONS)[0]);
-  else renderChecklist();
-}
-
-function selectIntegration(name) {
-  currentIntegration = name;
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.textContent===name));
-  renderChecklist();
-}
-
-// ── Checklist ─────────────────────────────────────────────
-function renderChecklist() {
-  if (!currentCustomer || !currentIntegration) return;
-  const state   = getChecklist(currentCustomer, currentIntegration);
-  const baseSteps = INTEGRATIONS[currentIntegration];
-  const custom  = getCustomSteps(currentCustomer, currentIntegration);
-  const done    = state.filter(Boolean).length + custom.filter(s => s.checked).length;
-  const total   = baseSteps.length + custom.length;
-  const pct     = total > 0 ? Math.round(done/total*100) : 0;
-
-  document.getElementById('progress-section').style.display = 'block';
-  document.getElementById('cl-actions').style.display = 'flex';
-  document.getElementById('progress-bar').style.width = pct + '%';
-  document.getElementById('progress-text').textContent = `${done} of ${total} done`;
-  document.getElementById('progress-pct').textContent  = pct + '%';
-  document.getElementById('all-done').classList.toggle('show', done===total && total>0);
-
-  const list = document.getElementById('checklist');
-  list.innerHTML = '';
-
-  // Base steps
-  baseSteps.forEach((step, i) => {
-    const item = document.createElement('div');
-    item.className = 'check-item' + (state[i] ? ' checked' : '');
-    item.innerHTML = `<div class="checkbox"><span class="checkmark">✓</span></div>
-      <div class="item-content">
-        <div class="item-title">${step.title}</div>
-        ${step.desc ? `<div class="item-desc">${step.desc}</div>` : ''}
-      </div>`;
-    item.onclick = () => {
-      const s = getChecklist(currentCustomer, currentIntegration);
-      s[i] = !s[i];
-      setChecklist(currentCustomer, currentIntegration, s);
-      renderChecklist(); renderHistory();
-    };
-    list.appendChild(item);
-  });
-
-  // Custom steps
-  custom.forEach((step, i) => {
-    const item = document.createElement('div');
-    item.className = 'check-item' + (step.checked ? ' checked' : '');
-    item.style.borderStyle = 'dashed';
-    item.innerHTML = `<div class="checkbox"><span class="checkmark">✓</span></div>
-      <div class="item-content">
-        <div class="item-title">${step.title}</div>
-        <div class="item-desc" style="color:#a78bfa;">custom step</div>
-      </div>
-      <button onclick="deleteCustomStep(${i},event)" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:0.85rem;padding:3px 7px;border-radius:5px;" title="Remove">✕</button>`;
-    item.querySelector('.checkbox').onclick = (e) => {
-      e.stopPropagation();
-      const c = getCustomSteps(currentCustomer, currentIntegration);
-      c[i].checked = !c[i].checked;
-      setCustomSteps(currentCustomer, currentIntegration, c);
-      renderChecklist(); renderHistory();
-    };
-    item.onclick = (e) => {
-      if (e.target.tagName === 'BUTTON') return;
-      const c = getCustomSteps(currentCustomer, currentIntegration);
-      c[i].checked = !c[i].checked;
-      setCustomSteps(currentCustomer, currentIntegration, c);
-      renderChecklist(); renderHistory();
-    };
-    list.appendChild(item);
-  });
-
-  // Add step row
-  const addRow = document.createElement('div');
-  addRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
-  addRow.innerHTML = `
-    <input type="text" id="new-step-input" placeholder="+ Add a step for this customer…"
-      style="flex:1;padding:9px 12px;border:1.5px dashed #d1d5db;border-radius:8px;font-size:0.85rem;background:white;color:#1a1a2e;outline:none;"
-      onfocus="this.style.borderColor='#a78bfa'" onblur="this.style.borderColor='#d1d5db'"
-      onkeydown="if(event.key==='Enter') addCustomStep()">
-    <button class="btn btn-sm" style="background:#ede9fe;color:#7c3aed;font-weight:600;" onclick="addCustomStep()">+ Add</button>`;
-  list.appendChild(addRow);
-}
-
-function addCustomStep() {
-  const input = document.getElementById('new-step-input');
-  if (!input) return;
-  const title = input.value.trim();
-  if (!title) return;
-  const custom = getCustomSteps(currentCustomer, currentIntegration);
-  custom.push({ title, checked: false });
-  setCustomSteps(currentCustomer, currentIntegration, custom);
-  renderChecklist();
-}
-
-function deleteCustomStep(index, e) {
-  e.stopPropagation();
-  const custom = getCustomSteps(currentCustomer, currentIntegration);
-  custom.splice(index, 1);
-  setCustomSteps(currentCustomer, currentIntegration, custom);
-  renderChecklist(); renderHistory();
-}
-
-function resetChecklist() {
-  if (!confirm('Reset all steps for this customer?')) return;
-  setChecklist(currentCustomer, currentIntegration, new Array(INTEGRATIONS[currentIntegration].length).fill(false));
-  const custom = getCustomSteps(currentCustomer, currentIntegration).map(s => ({...s, checked: false}));
-  setCustomSteps(currentCustomer, currentIntegration, custom);
-  renderChecklist(); renderHistory();
-}
-function checkAll() {
-  setChecklist(currentCustomer, currentIntegration, new Array(INTEGRATIONS[currentIntegration].length).fill(true));
-  const custom = getCustomSteps(currentCustomer, currentIntegration).map(s => ({...s, checked: true}));
-  setCustomSteps(currentCustomer, currentIntegration, custom);
-  renderChecklist(); renderHistory();
-}
-
-// ── Shared sub-list (suppliers + subcustomers) ────────────
+// ── Shared sub-list ───────────────────────────────────────
 const LIST_CONFIG = {
   suppliers: {
-    label:      cust => `Suppliers for ${cust}`,
-    labelEl:    'sup-cust-label',
-    inputId:    'new-supplier-input',
-    listEl:     'supplier-list',
-    progressEl: 'sup-progress-row',
-    textEl:     'sup-progress-text',
-    barEl:      'sup-bar',
-    pctEl:      'sup-progress-pct',
-    doneStatus: 'sftp',
-    doneLabel:  'on SFTP',
-    buttons: [
-      { status:'email',  label:'📧 Email Sent', cls:'s-email'  },
-      { status:'sftp',   label:'✅ On SFTP',    cls:'s-sftp'   }
-    ]
+    labelEl:'sup-cust-label', inputId:'new-supplier-input', listEl:'supplier-list',
+    progressEl:'sup-progress-row', textEl:'sup-progress-text', barEl:'sup-bar', pctEl:'sup-progress-pct',
+    doneStatus:'sftp', doneLabel:'on SFTP',
+    buttons:[{status:'email',label:'📧 Email Sent',cls:'s-email'},{status:'sftp',label:'✅ On SFTP',cls:'s-sftp'}]
   },
   subcustomers: {
-    label:      cust => `Sub-customers of ${cust}`,
-    labelEl:    'sc-cust-label',
-    inputId:    'new-subcustomer-input',
-    listEl:     'subcustomer-list',
-    progressEl: 'sc-progress-row',
-    textEl:     'sc-progress-text',
-    barEl:      'sc-bar',
-    pctEl:      'sc-progress-pct',
-    doneStatus: 'active',
-    doneLabel:  'active',
-    buttons: [
-      { status:'notified', label:'📧 Notified', cls:'s-notified' },
-      { status:'active',   label:'✅ Active',   cls:'s-active'   }
-    ]
+    labelEl:'sc-cust-label', inputId:'new-subcustomer-input', listEl:'subcustomer-list',
+    progressEl:'sc-progress-row', textEl:'sc-progress-text', barEl:'sc-bar', pctEl:'sc-progress-pct',
+    doneStatus:'active', doneLabel:'active',
+    buttons:[{status:'notified',label:'📧 Notified',cls:'s-notified'},{status:'active',label:'✅ Active',cls:'s-active'}]
   }
 };
 
 function addListItem(type) {
   if (!currentCustomer) return;
-  const cfg   = LIST_CONFIG[type];
+  const cfg = LIST_CONFIG[type];
   const input = document.getElementById(cfg.inputId);
-  const name  = input.value.trim();
+  const name = input.value.trim();
   if (!name) return;
   const items = getList(type, currentCustomer);
   if (items.find(x => x.name.toLowerCase()===name.toLowerCase())) { input.value=''; return; }
@@ -791,43 +854,36 @@ function deleteListItem(type, index, e) {
 
 function renderSubList(type) {
   if (!currentCustomer) return;
-  const cfg   = LIST_CONFIG[type];
+  const cfg = LIST_CONFIG[type];
   const items = getList(type, currentCustomer);
   const doneCount = items.filter(x => x.status===cfg.doneStatus).length;
-  const total     = items.length;
-  const pct       = total ? Math.round(doneCount/total*100) : 0;
-
+  const total = items.length;
+  const pct = total ? Math.round(doneCount/total*100) : 0;
   document.getElementById(cfg.labelEl).textContent = currentCustomer;
-
   const pr = document.getElementById(cfg.progressEl);
   pr.classList.toggle('show', total > 0);
   document.getElementById(cfg.textEl).textContent = `${doneCount} of ${total} ${cfg.doneLabel}`;
-  document.getElementById(cfg.barEl).style.width  = pct + '%';
-  document.getElementById(cfg.pctEl).textContent  = pct + '%';
-
+  document.getElementById(cfg.barEl).style.width = pct + '%';
+  document.getElementById(cfg.pctEl).textContent = pct + '%';
   const container = document.getElementById(cfg.listEl);
-  if (!items.length) { container.innerHTML = '<div class="empty">Nothing here yet. Add one above.</div>'; return; }
-
+  if (!items.length) { container.innerHTML = '<div class="empty">Nothing here yet.</div>'; return; }
   container.innerHTML = '';
   items.forEach((item, i) => {
     const el = document.createElement('div');
     el.className = 'sub-item';
-    const isEmail  = item.status === 'email'    || item.status === 'notified';
-    const isDone   = item.status === cfg.doneStatus;
-    el.style.cssText = isDone  ? 'border-color:#22c55e;background:#f0fdf4;'
-                     : isEmail ? 'border-color:#f59e0b;background:#fffbeb;' : '';
+    const isDone  = item.status === cfg.doneStatus;
+    const isEmail = item.status === 'email' || item.status === 'notified';
+    el.style.cssText = isDone ? 'border-color:#22c55e;background:#f0fdf4;' : isEmail ? 'border-color:#f59e0b;background:#fffbeb;' : '';
     const btns = cfg.buttons.map(b =>
-      `<button class="status-btn ${item.status===b.status ? b.cls : ''}"
-               onclick="setItemStatus('${type}',${i},'${b.status}')">${b.label}</button>`
+      `<button class="status-btn ${item.status===b.status?b.cls:''}" onclick="setItemStatus('${type}',${i},'${b.status}')">${b.label}</button>`
     ).join('');
-    el.innerHTML = `<div class="sub-item-name">${item.name}</div>
-      <div class="sub-status">${btns}</div>
-      <button class="sub-del" onclick="deleteListItem('${type}',${i},event)" title="Remove">✕</button>`;
+    el.innerHTML = `<div class="sub-item-name">${item.name}</div><div class="sub-status">${btns}</div>
+      <button class="sub-del" onclick="deleteListItem('${type}',${i},event)">✕</button>`;
     container.appendChild(el);
   });
 }
 
-// ── Boot ─────────────────────────────────────────────────
+// ── Boot ──────────────────────────────────────────────────
 initFirebase();
 </script>
 </body>
